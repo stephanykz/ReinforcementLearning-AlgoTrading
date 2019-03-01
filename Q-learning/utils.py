@@ -62,8 +62,8 @@ def create_iid(days):
     #make into pandas obj
     data = pd.DataFrame(
         {'stock_1': stock_1,
-         #'stock_2': stock_2,
-         #'stock_3': stock_3,
+         'stock_2': stock_2,
+         'stock_3': stock_3,
          'dummy': dummy
         })
     return data

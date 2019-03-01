@@ -14,7 +14,7 @@ def update(env, Q):
     try: episodes = int(sys.argv[2])
     except: episodes = 10
     ending_cap = []
-    #by default the training is set to be 100 episodes per training
+    # by default the training is set to be 100 episodes per training
     for episode in range(episodes):
         start = time.time()
         print('\n***Episoide Number*** ===>', episode)
@@ -107,6 +107,28 @@ def iid_data():
     test(test_env, Q)
     return
 
+def test_real_data_iid():
+    print('Test Different Model for Real Data')
+    # must index at starting at 0
+    train_data, data1 = split_data(create_iid(5000))
+    #train_data -= (train_data.shape[0] + data1.shape[0])-100
+    #train_data.index -= (train_data.shape[0] + data1.shape[0])-100
+    # init trading env with iid
+    env = TradingEnv(train_data, init_capital=100, is_discrete=False, source='IID')
+    #init Q table
+    Q = QLearningTable(actions=list(range(env.action_space_size)))
+    #train method
+    update(env, Q)
+
+    # test real data
+    data2, test_data = split_data(round_return_rate(get_data()))
+    test_data.index -= (data2.shape[0] + test_data.shape[0]) - 100
+    test_env = TradingEnv(test_data, init_capital=100, is_discrete=False, source='Real')
+    print(Q.q_table)
+    test(test_env, Q)
+
+    return
+
 def markov_data():
     print('For Markov Source')
     #get train and test for 5000 days where return rates are dependent on previous day
@@ -125,6 +147,27 @@ def markov_data():
     test(test_env, Q)
     return
 
+def test_real_data_markov_1():
+    print('Test Different Model for Real Data')
+    # must index at starting at 0
+    train_data, test_data = split_data(create_markov(5000))
+    # train_data.index -= 100
+    # init trading env with iid
+    env = TradingEnv(train_data, init_capital=100, is_discrete=False, source='IID')
+    #init Q table
+    Q = QLearningTable(actions=list(range(env.action_space_size)))
+    #train method
+    update(env, Q)
+
+    # test markov data 1
+    data, test_data = split_data(round_return_rate(get_data()))
+    #test_data.index -= (train_data.shape[0] + test_data.shape[0]) - 100
+    test_env = TradingEnv(test_data, init_capital=100, is_discrete=False, source='Real')
+    print(Q.q_table)
+    test(test_env, Q)
+
+    return
+
 def markov_data2():
     print('For Markov Memory 2 Source')
     #get train and test for 5000 days where return rates are dependent on previous day
@@ -139,6 +182,26 @@ def markov_data2():
     test_env = TradingEnv(test_data, init_capital=100, is_discrete=True, source='M2')
     print(Q.q_table)
     test(test_env, Q)
+    return
+
+def test_real_data_markov_2():
+    print('Test Different Model for Real Data')
+    # must index at starting at 0
+    train_data = create_markov_memory_2(2500)
+    # train_data.index -= 100
+    # init trading env with iid
+    env = TradingEnv(train_data, init_capital=100, is_discrete=False, source='IID')
+    #init Q table
+    Q = QLearningTable(actions=list(range(env.action_space_size)))
+    #train method
+    update(env, Q)
+
+    # test real data
+    data, test_data = split_data(round_return_rate(get_data()))
+    test_env = TradingEnv(test_data, init_capital=100, is_discrete=False, source='Real')
+    print(Q.q_table)
+    test(test_env, Q)
+
     return
 
 def mix():
@@ -157,6 +220,26 @@ def mix():
     test(test_env, Q)
     return
 
+def test_real_data_mix():
+    print('Test Different Model for Real Data')
+    # must index at starting at 0
+    train_data = create_markov_iid_mix(2500)
+    # train_data.index -= 100
+    # init trading env with iid
+    env = TradingEnv(train_data, init_capital=100, is_discrete=False, source='IID')
+    #init Q table
+    Q = QLearningTable(actions=list(range(env.action_space_size)))
+    #train method
+    update(env, Q)
+
+    # test real data
+    data, test_data = split_data(round_return_rate(get_data()))
+    test_env = TradingEnv(test_data, init_capital=100, is_discrete=False, source='Real')
+    print(Q.q_table)
+    test(test_env, Q)
+
+    return
+
 if __name__ == '__main__':
     try:
         source_type = sys.argv[1]
@@ -169,5 +252,9 @@ if __name__ == '__main__':
     elif source_type == 'markov2': markov_data2()
     elif source_type == 'iid': iid_data()
     elif source_type == 'real': real_data()
+    elif source_type == 'test_real_iid': test_real_data_iid()
+    elif source_type == 'test_real_markov_1': test_real_data_markov_1()
+    elif source_type == 'test real markov 2': test_real_data_markov_2()
+    elif source_type == 'test real mix':test_real_data_mix()
     elif source_type == 'mix': mix()
     else: print('Invalid arguement.')
