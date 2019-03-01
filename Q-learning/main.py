@@ -7,12 +7,15 @@ import matplotlib.pyplot as plt
 from enviorment import TradingEnv
 from gym import spaces
 from Q_table import QLearningTable
-
+from tabulate import tabulate
+from numba import jit
 from utils import *
 
+@jit
 def update(env, Q):
-    try: episodes = int(sys.argv[2])
-    except: episodes = 10
+    # try: episodes = int(sys.argv[2])
+    # except: episodes = 10
+    episodes = 10
     ending_cap = []
     # by default the training is set to be 100 episodes per training
     for episode in range(episodes):
@@ -84,7 +87,7 @@ def real_data():
     #train method
     update(env, Q)
     test_env = TradingEnv(test_data, init_capital=100, is_discrete=False, source='Real')
-    print(Q.q_table)
+    print(tabulate(Q.q_table, tablefmt="markdown", headers="keys"))
     test(test_env, Q)
     return
 
@@ -93,17 +96,16 @@ def iid_data():
     #get train and test data for 5000 days where return rate is i.i.d
     train_data, test_data = split_data(create_iid(5000))
     test_data.index -= (train_data.shape[0] + test_data.shape[0])-100
-    #train_data = pd.read_pickle("data/train_data_iid")
-    #test_data = pd.read_pickle("data/test_data_iid")
     #init trading enviorment
     env = TradingEnv(train_data, init_capital=100, is_discrete = False, source='IID')
     #init q learing table
-    Q = QLearningTable(actions=list(range(env.action_space_size)))
+    Q = QLearningTable(actions=list(range(env.action_space_size)), observations=[[0,0]])
+    Q.setup_table()
     #traing method
     update(env, Q)
     #print(Q.q_table)
     test_env = TradingEnv(test_data, init_capital=100, is_discrete = False, source='IID')
-    print(Q.q_table)
+    print(tabulate(Q.q_table, tablefmt="markdown", headers="keys"))
     test(test_env, Q)
     return
 
@@ -134,16 +136,15 @@ def markov_data():
     #get train and test for 5000 days where return rates are dependent on previous day
     train_data, test_data = split_data(create_markov(5000))
     test_data.index -= (train_data.shape[0] + test_data.shape[0]) - 100
-    #train_data = pd.read_pickle("data/train_data_mc")
-    #test_data = pd.read_pickle("data/test_data_mc")
     #init trading envioourment
     env = TradingEnv(train_data, init_capital=100, is_discrete=True, source='M')
     #init q learning Q_table
-    Q = QLearningTable(actions=list(range(env.action_space_size)))
+    Q = QLearningTable(actions=list(range(env.action_space_size)), observations=train_data.drop_duplicates().values)
+    Q.setup_table()
     #training method
     update(env, Q)
     test_env = TradingEnv(test_data, init_capital=100, is_discrete=True, source='M')
-    print(Q.q_table)
+    print(tabulate(Q.q_table, tablefmt="markdown", headers="keys"))
     test(test_env, Q)
     return
 
@@ -180,7 +181,7 @@ def markov_data2():
     #training method
     update(env, Q)
     test_env = TradingEnv(test_data, init_capital=100, is_discrete=True, source='M2')
-    print(Q.q_table)
+    print(tabulate(Q.q_table, tablefmt="markdown", headers="keys"))
     test(test_env, Q)
     return
 
@@ -216,10 +217,11 @@ def mix():
     #training method
     update(env, Q)
     test_env = TradingEnv(test_data, init_capital=100, is_discrete=False, source='mix')
-    print(Q.q_table)
+    print(tabulate(Q.q_table, tablefmt="markdown", headers="keys"))
     test(test_env, Q)
     return
 
+'''<<<<<<< HEAD
 def test_real_data_mix():
     print('Test Different Model for Real Data')
     # must index at starting at 0
@@ -239,7 +241,23 @@ def test_real_data_mix():
     test(test_env, Q)
 
     return
+======='''
+def train_markov_real():
+    #get markov to train q table on
+    train_data, ignore_test_data = split_data(create_markov(5000))
+    env = TradingEnv(train_data, init_capital=100, is_discrete=True, source='M')
+    Q = QLearningTable(actions=list(range(env.action_space_size)))
+    #training method
+    update(env, Q)
+    #get real data for testing
+    real_train_data, real_test_data = split_data(round_return_rate(get_data()))
+    test_env = TradingEnv(real_test_data, init_capital=100, is_discrete=True, source='Real')
+    print(tabulate(Q.q_table, tablefmt="markdown", headers="keys"))
+    test(test_env, Q)
+    return
 
+
+# >>>>>>> 6723a8b47f0ffce060cdbddbe313bc6b46d5b062
 if __name__ == '__main__':
     try:
         source_type = sys.argv[1]
@@ -258,3 +276,12 @@ if __name__ == '__main__':
     elif source_type == 'test real mix':test_real_data_mix()
     elif source_type == 'mix': mix()
     else: print('Invalid arguement.')
+
+
+    ## To do
+    # done -- Fix action quantization to be 10 percent intervals
+    # done -- Reduce to two assets for ease of use
+    # Try training on markov data and testing on real data
+    # Try training on real data and testing on real data
+    # Try training on markov and testing on ibm, micro and qual seperatly
+    # Make markov source where you can specify the size of the memory
